@@ -1,0 +1,155 @@
+#!/usr/bin/python
+
+"""
+Install local Python 2.7 dependencies:
+  - sudo pip install pycrypto
+  - sudo pip install pyotp
+  - sudo pip install pyperclip
+"""
+
+
+import argparse
+import getpass
+import json
+import os
+import pyotp
+import pyperclip
+import sys
+import time
+
+from hashlib import md5
+from base64 import b64decode
+from base64 import b64encode
+from Crypto import Random
+from Crypto.Cipher import AES
+
+
+home_dir=os.path.expanduser('~')
+totp_file='%s/.totp-encr' % home_dir
+
+BLOCK_SIZE = 16
+pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
+unpad = lambda s: s[:-ord(s[-1])]
+
+
+def check_file():
+    if os.path.isfile(totp_file):
+        process_input()
+    else:
+        create_file()
+
+
+def create_file():
+    print("\nNo MFA service json file found; please run the command 'totp-encryptor' to get started\n")
+
+
+def read_file():
+    try:
+        data = json.load(open(totp_file))
+    except ValueError:
+        print("\njson formatting error; exiting...\n")
+        sys.exit()
+
+    return data
+
+
+def build_parser(data):
+    parser = argparse.ArgumentParser(prog='totp', add_help=False, description="Generate Time-based One Time Passwords (TOTP) for services requiring MFA")
+
+    help = parser.add_argument_group('Help')
+    help.add_argument('-h', '--help', dest='help', action='store_true', default=False, help="Show this help message and exit")
+
+    all_services = parser.add_argument_group('All Services')
+    all_services.add_argument('-a', '--all', dest='all', action='store_true', default=False, help="Print TOTP values for all services")
+
+    individual_services = parser.add_argument_group('Individual Services')
+    for service in sorted(data.iterkeys()):
+        individual_services.add_argument('--%s' % service, dest=service, action='store_true', default=False, help=data[service]["description"])
+
+    optional_flags = parser.add_argument_group('Optional Flags')
+    optional_flags.add_argument('--suppress-copy', dest='suppress', action='store_true', default=False, help="Don't copy the generated token to the system clipboard")
+
+    return parser
+
+
+def count_args(args, data_keys):
+    count = 0
+
+    for service in data_keys:
+        if getattr(args, service):
+            count += 1
+
+    return count
+
+
+def process_input():
+    data = read_file()
+    parser = build_parser(data)
+    args = parser.parse_args()
+    count = count_args(args, sorted(data.iterkeys()))
+
+    if args.help or count == 0 and not args.all:
+        print
+        parser.print_help()
+        print
+    else:
+        try:
+            pin = getpass.getpass(prompt='PIN: ', stream=sys.stderr)
+            backtrack(1)
+            countdown = 30 - (int(time.time()) % 30)
+            sys.stderr.write("\n%s (%ds)\n" % ("SUCCESS", countdown))
+
+            for service in sorted(data.iterkeys()):
+                if getattr(args, service) and count == 1 and not args.all:
+                    token = pyotp.TOTP(decrypt(pin, data[service]["encr_secret"])).now()
+                    print(token)
+                    if not args.suppress:
+                        try:
+                            pyperclip.copy(token)
+                        except RuntimeError:
+                            pass
+                elif getattr(args, service) and count > 1 or args.all:
+                    print(service + ": " + pyotp.TOTP(decrypt(pin, data[service]["encr_secret"])).now())
+            sys.stderr.write("\n")
+
+        except KeyboardInterrupt:
+            keyboard_interrupt(0)
+
+        except UnicodeDecodeError:
+            decode_error(2)
+
+
+def decrypt(pin, enc):
+    enc = b64decode(enc)
+    iv = enc[:16]
+    cipher = AES.new(keygen(pin), AES.MODE_CBC, iv)
+
+    return unpad(cipher.decrypt(enc[16:])).decode('utf8')
+
+
+def keygen(key):
+    return md5(key.encode('utf8')).hexdigest()
+
+
+def backtrack(rows):
+    for x in range(rows):
+        sys.stderr.write("\033[1A\033[2K")
+
+
+def keyboard_interrupt(rows):
+    sys.stderr.write("\033[2K")
+    backtrack(rows)
+    sys.stderr.write("\nInput cancelled; exiting...\n\n")
+    time.sleep(2)
+    backtrack(3)
+
+
+def decode_error(rows):
+    backtrack(rows)
+    sys.stderr.write("\nBad PIN; exiting...\n\n")
+    time.sleep(2)
+    backtrack(3)
+
+
+if __name__ == "__main__":
+    check_file()
