@@ -67,8 +67,9 @@ separate PIN per service, or use the same PIN for all services. If you lose your
 
 When setting up a new service that requires MFA, you are normally presented with a QR code that allows you to add the
 service to e.g. Google Authenticator. At this stage, retrieve the "manual configuration key" (the MFA secret key) from
-the service instead, and paste it into the `totp-encryptor` tool when prompted. If you like, you can still register the
-service on your mobile device as well; the TOTP mechanism permits multiple enrolled devices.
+the service instead, and paste it into the `totp-encryptor` tool when prompted. In AWS this can be found by clicking
+`Show secret key` when configuring MFA. If you like, you can still register the service on your mobile device as well;
+the TOTP mechanism permits multiple enrolled devices.
 
 
 ### Generating OTP Tokens
