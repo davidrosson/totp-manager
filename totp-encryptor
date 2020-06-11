@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-Install local Python 2.7 dependency:
+Install local Python 3.x dependency:
   - sudo pip install pycrypto
 """
 
@@ -24,7 +24,7 @@ totp_file='%s/.totp-encr' % home_dir
 
 BLOCK_SIZE = 16
 pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
-unpad = lambda s: s[:-ord(s[-1])]
+unpad = lambda s: s[:-s[-1]]
 
 
 def check_file():
@@ -51,7 +51,7 @@ def prompt_action_new():
         not_answered = True
         while not_answered:
             backtrack(1)
-            choice = raw_input("Selection: ").lower()
+            choice = input("Selection: ").lower()
             if choice not in add and choice not in quit:
                 backtrack(1)
                 print("You must make a valid choice!")
@@ -132,7 +132,7 @@ def read_file(pin=None, show_encr=True):
         print("\nIdentified the following MFA services:")
 
         count = 0
-        for service in sorted(data.iterkeys()):
+        for service in sorted(data.keys()):
             count += 1
             print("\n[%d]" % count)
             print("   Shortname: %s" % service)
@@ -168,7 +168,7 @@ def prompt_action_exists(data, count):
         not_answered = True
         while not_answered:
             backtrack(1)
-            choice = raw_input("Selection: ").lower()
+            choice = input("Selection: ").lower()
             if choice not in add and choice not in modify and choice not in delete and choice not in show and choice not in quit:
                 backtrack(1)
                 print("You must make a valid choice!")
@@ -220,17 +220,17 @@ def add_to_file(pin, data):
     try:
         backtrack(1)
         print("Enter the shortname of the new service requiring MFA, e.g. aws\n")
-        service = raw_input('Shortname: ')
+        service = input('Shortname: ')
 
         backtrack(3)
         print("Enter a description for the '%s' service, e.g. Amazon Web Services (username@company)\n" % service)
-        desc = raw_input('Description: ')
+        desc = input('Description: ')
 
         secret = ""
         while len(str(secret)) < 16:
             backtrack(3)
             print("Enter the service's secret MFA key (16-64 chars), e.g. JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP\n")
-            secret = raw_input('Secret MFA Key: ')
+            secret = input('Secret MFA Key: ')
             if len(str(secret)) < 16:
                 backtrack(1)
                 print("The PIN must be at least %d digits; please try again" % 16)
@@ -273,7 +273,7 @@ def modify_file(pin, data, count):
     print("\n***Modify file***\n")
 
     print("Available services:\n")
-    for service in sorted(data.iterkeys()):
+    for service in sorted(data.keys()):
         print("   Shortname: %s" % service)
     print("\n")
 
@@ -282,8 +282,8 @@ def modify_file(pin, data, count):
         while not_answered:
             backtrack(1)
             print("Enter the shortname of the service to modify, e.g. aws\n")
-            service = raw_input('Shortname: ')
-            if service not in data.iterkeys():
+            service = input('Shortname: ')
+            if service not in data.keys():
                 backtrack(1)
                 print("You must make a valid choice!")
                 time.sleep(2)
@@ -303,7 +303,7 @@ def modify_file(pin, data, count):
 
     try:
         print("Enter a new shortname for the '%s' service [or leave blank to keep the current '%s' shortname]\n" % (service, service))
-        new_name = raw_input('New shortname: ')
+        new_name = input('New shortname: ')
         if new_name == "":
             new_name = service
 
@@ -322,7 +322,7 @@ def modify_file(pin, data, count):
         print("   %s\n" % data[service]["description"])
 
         print("Enter a new description for the '%s' service [or leave blank to keep the current '%s' description]\n" % (new_name, service))
-        desc = raw_input('New description: ')
+        desc = input('New description: ')
         if desc == "":
             desc = data[service]["description"]
 
@@ -343,7 +343,7 @@ def modify_file(pin, data, count):
         secret = "nil"
         while not ( len(str(secret)) == 0 or len(str(secret)) > 15 ):
             print("Enter a new secret MFA key (16-64 chars) for the '%s' service [or leave blank to keep the current '%s' secret MFA key]\n" % (new_name, service))
-            secret = raw_input('New secret MFA key: ')
+            secret = input('New secret MFA key: ')
             if secret == "":
                 secret = decrypt(pin, data[service]["encr_secret"])
             elif len(str(secret)) < 16:
@@ -397,7 +397,7 @@ def delete_from_file(pin, data, count):
     print("\n***Delete from file***\n")
 
     print("Available services:\n")
-    for service in sorted(data.iterkeys()):
+    for service in sorted(data.keys()):
         print("   Shortname: %s" % service)
     print("\n")
 
@@ -406,8 +406,8 @@ def delete_from_file(pin, data, count):
         while not_answered:
             backtrack(1)
             print("Enter the shortname of the service to delete, e.g. aws\n")
-            service = raw_input('Shortname: ')
-            if service not in data.iterkeys():
+            service = input('Shortname: ')
+            if service not in data.keys():
                 backtrack(1)
                 print("You must make a valid choice!")
                 time.sleep(2)
@@ -464,7 +464,7 @@ def prompt_yes_no(message):
     not_answered = True
     while not_answered:
         backtrack(1)
-        choice = raw_input("\n%s" % message).lower()
+        choice = input("\n%s" % message).lower()
         if choice not in yes and choice not in no:
             backtrack(1)
             print("You must make a valid choice!")

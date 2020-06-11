@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-Install local Python 2.7 dependencies:
+Install local Python 3.x dependencies:
   - sudo pip install pycrypto
   - sudo pip install pyotp
   - sudo pip install pyperclip
@@ -29,7 +29,7 @@ totp_file='%s/.totp-encr' % home_dir
 
 BLOCK_SIZE = 16
 pad = lambda s: s + (BLOCK_SIZE - len(s) % BLOCK_SIZE) * chr(BLOCK_SIZE - len(s) % BLOCK_SIZE)
-unpad = lambda s: s[:-ord(s[-1])]
+unpad = lambda s: s[:-s[-1]]
 
 
 def check_file():
@@ -63,7 +63,7 @@ def build_parser(data):
     all_services.add_argument('-a', '--all', dest='all', action='store_true', default=False, help="Print TOTP values for all services")
 
     individual_services = parser.add_argument_group('Individual Services')
-    for service in sorted(data.iterkeys()):
+    for service in sorted(data.keys()):
         individual_services.add_argument('--%s' % service, dest=service, action='store_true', default=False, help=data[service]["description"])
 
     optional_flags = parser.add_argument_group('Optional Flags')
@@ -86,7 +86,7 @@ def process_input():
     data = read_file()
     parser = build_parser(data)
     args = parser.parse_args()
-    count = count_args(args, sorted(data.iterkeys()))
+    count = count_args(args, sorted(data.keys()))
 
     if args.help or count == 0 and not args.all:
         print
@@ -99,7 +99,7 @@ def process_input():
             countdown = 30 - (int(time.time()) % 30)
             sys.stderr.write("\n%s (%ds)\n" % ("SUCCESS", countdown))
 
-            for service in sorted(data.iterkeys()):
+            for service in sorted(data.keys()):
                 if getattr(args, service) and count == 1 and not args.all:
                     token = pyotp.TOTP(decrypt(pin, data[service]["encr_secret"])).now()
                     print(token)

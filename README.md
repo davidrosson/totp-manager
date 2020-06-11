@@ -7,7 +7,7 @@ Authenticator app.
 
 ## Requirements
 
-* Python 2.7.x
+* Python 3.x
 
 
 ## Installing the TOTP Manager Tool
