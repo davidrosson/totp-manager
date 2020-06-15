@@ -2,7 +2,7 @@
 
 """
 Install local Python 3.x dependencies:
-  - sudo pip install pycrypto
+  - sudo pip install pycryptodome
   - sudo pip install pyotp
   - sudo pip install pyperclip
 """
@@ -128,7 +128,7 @@ def decrypt(pin, enc):
 
 
 def keygen(key):
-    return md5(key.encode('utf8')).hexdigest()
+    return md5(key.encode('utf8')).hexdigest().encode('utf8')
 
 
 def backtrack(rows):
